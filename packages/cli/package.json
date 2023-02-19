@@ -19,12 +19,13 @@
   "devDependencies": {
     "@types/fs-extra": "^9.0.13",
     "@types/gunzip-maybe": "^1.4.0",
+    "@types/listr": "^0.14.4",
     "@types/prettier": "^2.7.2",
     "@types/recursive-readdir": "^2.2.1",
     "@types/tar-fs": "^2.0.1",
     "oclif": "^3.4.2",
-    "vitest": "^0.28.1",
-    "tempy": "^3.0.0"
+    "tempy": "^3.0.0",
+    "vitest": "^0.28.1"
   },
   "peerDependencies": {
     "@remix-run/react": "^1.12.0",
@@ -36,9 +37,12 @@
     "@remix-run/dev": "^1.12.0",
     "@shopify/cli-kit": "3.29.0",
     "@shopify/mini-oxygen": "^1.3.1",
+    "@types/jscodeshift": "^0.11.6",
     "fast-glob": "^3.2.12",
     "fs-extra": "^10.1.0",
     "gunzip-maybe": "^1.4.2",
+    "jscodeshift": "^0.14.0",
+    "listr": "^0.14.3",
     "prettier": "^2.8.4",
     "recursive-readdir": "^2.2.3",
     "tar-fs": "^2.1.1",
