@@ -94,18 +94,6 @@ async function transform(
   const applyTransform = (await import('jscodeshift/dist/testUtils.js'))
     .applyTransform;
   const transforms = await import(migrationFile);
-  const transformOptions = {
-    babel: true,
-    dry: true,
-    extensions: 'tsx,ts,jsx,js',
-    failOnError: false,
-    ignorePattern: ['**/node_modules/**', '**/.cache/**', '**/build/**'],
-    print: true,
-    runInBand: true,
-    silent: false,
-    stdin: false,
-    verbose: 2,
-  };
 
   const filePaths = await path.glob([`${appPath}/app/**/*.tsx`]);
 
@@ -123,7 +111,7 @@ async function transform(
     try {
       const output = applyTransform(
         {parser: 'tsx', ...transforms},
-        transformOptions,
+        {},
         {
           source,
           path: filePath,
