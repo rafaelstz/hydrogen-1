@@ -5,7 +5,6 @@ import {Flags} from '@oclif/core';
 import Command from '@shopify/cli-kit/node/base-command';
 import {AbortError} from '@shopify/cli-kit/node/error';
 import Listr from 'listr';
-// import * as jscodeshift from 'jscodeshift/src/Runner.js';
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
@@ -43,6 +42,8 @@ export default class Migrate extends Command {
   ];
 
   async run(): Promise<void> {
+    debugger;
+
     // @ts-ignore
     const {flags, args} = await this.parse(Migrate);
     const directory = flags.path ? path.resolve(flags.path) : process.cwd();
@@ -73,47 +74,10 @@ export async function runMigration(
   const {migrationFile} = options;
   const tasks = [
     {
-      title: 'Installing dependencies',
+      title: 'Running test migration',
       task: async () => {
-        //   await addResolutionOrOverrideIfNeeded(app.directory, extensionFlavor)
-        //   const requiredDependencies = getExtensionRuntimeDependencies({specification, extensionFlavor})
-        //   await addNPMDependenciesIfNeeded(requiredDependencies, {
-        //     packageManager: app.packageManager,
-        //     type: 'prod',
-        //     directory: app.directory,
-        //   })
-        // },
-        console.log(migrationFile);
-
         await transform(migrationFile, options);
       },
-      // {
-      //   title: `Generating ${specification.externalName} extension`,
-      //   task: async () => {
-      // const templateDirectory =
-      //   specification.templatePath ??
-      //   (await findPathUp(`templates/ui-extensions/projects/${specification.identifier}`, {
-      //     type: 'directory',
-      //     cwd: moduleDirectory(import.meta.url),
-      //   }))
-
-      // if (!templateDirectory) {
-      //   throw new BugError(`Couldn't find the template for '${specification.externalName}'`)
-      // }
-
-      // const srcFileExtension = getSrcFileExtension(extensionFlavor ?? 'vanilla-js')
-      // await recursiveLiquidTemplateCopy(templateDirectory, extensionDirectory, {
-      //   srcFileExtension,
-      //   flavor: extensionFlavor ?? '',
-      //   type: specification.identifier,
-      //   name,
-      // })
-
-      // if (extensionFlavor) {
-      //   await changeIndexFileExtension(extensionDirectory, srcFileExtension)
-      //   await removeUnwantedTemplateFilesPerFlavor(extensionDirectory, extensionFlavor)
-      // }
-      // },
     },
   ];
 
@@ -124,16 +88,15 @@ export async function runMigration(
 
 async function transform(
   migrationFile: string,
-  {dry, path: appPath}: MigrateOptions,
+  {path: appPath}: MigrateOptions,
 ) {
   // @ts-expect-error `@types/jscodeshift` doesn't have types for this
   const applyTransform = (await import('jscodeshift/dist/testUtils.js'))
     .applyTransform;
-
   const transforms = await import(migrationFile);
   const transformOptions = {
     babel: true,
-    dry,
+    dry: true,
     extensions: 'tsx,ts,jsx,js',
     failOnError: false,
     ignorePattern: ['**/node_modules/**', '**/.cache/**', '**/build/**'],
@@ -144,29 +107,15 @@ async function transform(
     stdin: false,
     verbose: 2,
   };
-
-  const filepaths = await path.glob([`${appPath}/**/*`]);
+  const filepaths = await path.glob([`${appPath}/app/**/*`]);
 
   if (filepaths.length === 0) {
-    throw new Error(`No files found for ${appPath}`);
+    throw new AbortError(`No files found for ${appPath}`);
   }
 
   try {
-    const output = applyTransform(transforms, transformOptions, 'input');
-    // await jscodeshift.run(migrationFile, filepaths, {
-    //   babel: true,
-    //   ignorePattern: ['**/node_modules/**', '**/.next/**', '**/build/**'],
-    //   extensions: 'tsx,ts,jsx,js',
-    //   parser: 'tsx',
-    //   verbose: 2,
-    //   silent: false,
-    //   stdin: false,
-    // });
-    console.log(output);
+    applyTransform(transforms.default, transformOptions, 'input');
   } catch (error: unknown) {
-    // eslint-disable-next-line no-console
-    // console.error(error);
-    // process.exit(1);
     throw new AbortError((error as Error).message);
   }
 }

@@ -12,7 +12,7 @@ export default function v2(
   {jscodeshift: j}: API,
   options: MigrationOptions,
 ) {
-  const source = j(file.source);
+  // const source = j(file.source);
 
   // if (
   //   !options.relative &&
@@ -23,5 +23,6 @@ export default function v2(
 
   // replaceComponent(j, source, options);
 
-  return source.toSource();
+  // return source.toSource();
+  return '';
 }
