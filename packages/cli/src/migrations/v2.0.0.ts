@@ -12,17 +12,8 @@ export default function v2(
   {jscodeshift: j}: API,
   options: MigrationOptions,
 ) {
-  // const source = j(file.source);
-
-  // if (
-  //   !options.relative &&
-  //   !hasImportDeclaration(j, source, '@shopify/hydrogen')
-  // ) {
-  //   return file.source;
-  // }
-
-  // replaceComponent(j, source, options);
-
-  // return source.toSource();
-  return '';
+  return j(file.source)
+    .find(j.Identifier)
+    .replaceWith((p) => j.identifier(p.node.name.split('').reverse().join('')))
+    .toSource();
 }

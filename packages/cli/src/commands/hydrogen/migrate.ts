@@ -96,26 +96,39 @@ async function transform(
   const transforms = await import(migrationFile);
   const transformOptions = {
     babel: true,
-    dry: true,
+    dry: false,
     extensions: 'tsx,ts,jsx,js',
     failOnError: false,
     ignorePattern: ['**/node_modules/**', '**/.cache/**', '**/build/**'],
-    parser: 'tsx',
     print: true,
     runInBand: true,
     silent: false,
     stdin: false,
     verbose: 2,
   };
-  const filepaths = await path.glob([`${appPath}/app/**/*`]);
+  const filepaths = await path.glob([`${appPath}/app/**/*.tsx`]);
 
   if (filepaths.length === 0) {
     throw new AbortError(`No files found for ${appPath}`);
   }
 
-  try {
-    applyTransform(transforms.default, transformOptions, 'input');
-  } catch (error: unknown) {
-    throw new AbortError((error as Error).message);
+  for (const fi of filepaths) {
+    const source = await file.read(fi);
+
+    if (source === undefined) {
+      return;
+    }
+
+    if (!fi || !source) {
+      throw new AbortError(`No file found for ${fi}`);
+    }
+    try {
+      applyTransform({parser: 'tsx', ...transforms}, transformOptions, {
+        source,
+        path: fi,
+      });
+    } catch (error: unknown) {
+      throw new AbortError((error as Error).message);
+    }
   }
 }
