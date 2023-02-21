@@ -1,7 +1,6 @@
-import {path, output, file, error} from '@shopify/cli-kit';
+import {path, file} from '@shopify/cli-kit';
 import url from 'url';
 import {commonFlags} from '../../utils/flags.js';
-import {Flags} from '@oclif/core';
 import Command from '@shopify/cli-kit/node/base-command';
 import {AbortError} from '@shopify/cli-kit/node/error';
 import Listr from 'listr';
@@ -11,12 +10,7 @@ const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const MIGRATIONS = ['v2.0.0'];
 
 interface MigrateOptions {
-  transform?: string;
-  migration?: string;
   path: string;
-  dry?: boolean;
-  print?: boolean;
-  force?: boolean;
 }
 
 // @ts-ignore
@@ -25,10 +19,6 @@ export default class Migrate extends Command {
     'Apply migration steps to upgrade a Hydrogen storefront.';
   static flags = {
     path: commonFlags.path,
-    transform: Flags.string(),
-    dry: Flags.boolean(),
-    print: Flags.boolean(),
-    force: Flags.boolean(),
   };
 
   static args = [
