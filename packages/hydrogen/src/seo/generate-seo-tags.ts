@@ -7,7 +7,11 @@ const ERROR_PREFIX = 'Error in SEO input: ';
 // other places. @cartogram
 const schema = {
   title: {
-    validate: (value: unknown) => {
+    validate: <T>(value: Maybe<T>): NonNullable<T> => {
+      if (typeof value !== 'string') {
+        throw new Error(ERROR_PREFIX.concat('`title` should be a string'));
+      }
+
       if (typeof value === 'string' && value.length > 120) {
         throw new Error(
           ERROR_PREFIX.concat(
@@ -15,11 +19,18 @@ const schema = {
           ),
         );
       }
+
       return value;
     },
   },
   description: {
-    validate: (value: unknown) => {
+    validate: <T>(value: Maybe<T>): NonNullable<T> => {
+      if (typeof value !== 'string') {
+        throw new Error(
+          ERROR_PREFIX.concat('`description` should be a string'),
+        );
+      }
+
       if (typeof value === 'string' && value.length > 155) {
         throw new Error(
           ERROR_PREFIX.concat(
@@ -27,19 +38,29 @@ const schema = {
           ),
         );
       }
+
       return value;
     },
   },
   url: {
-    validate: (value: unknown) => {
+    validate: <T>(value: Maybe<T>): NonNullable<T> => {
+      if (typeof value !== 'string') {
+        throw new Error(ERROR_PREFIX.concat('`url` should be a string'));
+      }
+
       if (typeof value === 'string' && !value.startsWith('http')) {
         throw new Error(ERROR_PREFIX.concat('`url` should be a valid URL'));
       }
+
       return value;
     },
   },
   handle: {
-    validate: (value: unknown) => {
+    validate: <T>(value: Maybe<T>): NonNullable<T> => {
+      if (typeof value !== 'string') {
+        throw new Error(ERROR_PREFIX.concat('`handle` should be a string'));
+      }
+
       if (typeof value === 'string' && !value.startsWith('@')) {
         throw new Error(ERROR_PREFIX.concat('`handle` should start with `@`'));
       }
@@ -335,225 +356,235 @@ export function generateSeoTags<
   Schema extends Thing,
   T extends Seo<Schema> = Seo<Schema>,
 >(seoInput: T): CustomHeadTagObject[] {
-  const output: CustomHeadTagObject[] = [];
+  const tagResults: CustomHeadTagObject[] = [];
 
-  // TODO: Type this with `Schema` when we can use `Schema` as a generic type argument.
   let jsonLd: any = {
     '@context': 'https://schema.org',
     '@type': 'Thing',
   };
 
   for (const seoKey of Object.keys(seoInput)) {
-    const values = ensureArray(seoInput[seoKey as keyof T]);
-    let content;
+    switch (seoKey) {
+      case 'title': {
+        const content = validate(schema.title, seoInput.title);
+        const title = renderTitle(seoInput?.titleTemplate, content);
 
-    if (!values) {
-      return [];
-    }
-
-    const tags = values.map((value) => {
-      const tagResults: CustomHeadTagObject[] = [];
-
-      if (!value) {
-        return tagResults;
-      }
-
-      switch (seoKey) {
-        case 'title': {
-          content = validate(schema.title, value) as string;
-
-          const title = renderTitle(seoInput?.titleTemplate, content);
-
-          tagResults.push(
-            generateTag('title', {title}),
-            generateTag('meta', {property: 'og:title', content: title}),
-            generateTag('meta', {name: 'twitter:title', content: title}),
-          );
-
-          jsonLd.name = content;
-
+        if (!title) {
           break;
         }
 
-        case 'description':
-          content = validate(schema.description, value) as string;
+        tagResults.push(
+          generateTag('title', {title}),
+          generateTag('meta', {property: 'og:title', content: title}),
+          generateTag('meta', {name: 'twitter:title', content: title}),
+        );
 
-          tagResults.push(
-            generateTag('meta', {
-              name: 'description',
-              content,
-            }),
-            generateTag('meta', {
-              property: 'og:description',
-              content,
-            }),
-            generateTag('meta', {
-              name: 'twitter:description',
-              content,
-            }),
-          );
+        jsonLd.name = content;
 
-          jsonLd.description = content;
+        break;
+      }
 
+      case 'description': {
+        const content = validate(schema.description, seoInput.description);
+
+        if (!content) {
           break;
+        }
 
-        case 'url':
-          content = validate(schema.url, value) as string;
+        tagResults.push(
+          generateTag('meta', {
+            name: 'description',
+            content,
+          }),
+          generateTag('meta', {
+            property: 'og:description',
+            content,
+          }),
+          generateTag('meta', {
+            name: 'twitter:description',
+            content,
+          }),
+        );
 
-          tagResults.push(
-            generateTag('meta', {property: 'og:url', content}),
-            generateTag('link', {rel: 'canonical', href: content}),
-          );
+        jsonLd.description = content;
 
-          jsonLd.url = content;
-          jsonLd['@type'] = inferSchemaType(content);
+        break;
+      }
 
+      case 'url': {
+        const content = validate(schema.url, seoInput.url);
+
+        if (!content) {
           break;
+        }
 
-        case 'handle':
-          content = validate(schema.handle, value) as string;
+        tagResults.push(
+          generateTag('link', {
+            rel: 'canonical',
+            href: content,
+          }),
+          generateTag('meta', {
+            property: 'og:url',
+            content,
+          }),
+        );
 
-          tagResults.push(
-            generateTag('meta', {name: 'twitter:site', content}),
-            generateTag('meta', {name: 'twitter:creator', content}),
-          );
+        jsonLd.url = content;
+        jsonLd['@type'] = inferSchemaType(content);
 
+        break;
+      }
+
+      case 'handle': {
+        const content = validate(schema.handle, seoInput.handle);
+
+        if (!content) {
           break;
+        }
 
-        case 'jsonLd':
-          jsonLd = {...jsonLd, ...value};
+        tagResults.push(
+          generateTag('meta', {name: 'twitter:site', content}),
+          generateTag('meta', {name: 'twitter:creator', content}),
+        );
 
-          break;
+        break;
+      }
 
-        case 'media': {
-          const values = ensureArray(value as unknown as Seo['media']);
+      case 'media': {
+        let content;
+        const values = ensureArray(seoInput.media);
 
-          for (const media of values) {
-            if (typeof media === 'string') {
-              tagResults.push(
-                generateTag('meta', {name: 'og:image', content: media}),
-              );
+        for (const media of values) {
+          if (typeof media === 'string') {
+            tagResults.push(
+              generateTag('meta', {name: 'og:image', content: media}),
+            );
 
-              jsonLd.image = media;
-            }
+            jsonLd.image = media;
+          }
 
-            if (media && typeof media === 'object') {
-              const type = media.type || 'image';
+          if (media && typeof media === 'object') {
+            const type = media.type || 'image';
 
-              // Order matters here when adding multiple media tags @see https://ogp.me/#array
-              const normalizedMedia = media
-                ? {
-                    url: media?.url,
-                    secure_url: media?.url,
-                    type: inferMimeType(media.url),
-                    width: media?.width,
-                    height: media?.height,
-                    alt: media?.altText,
-                  }
-                : {};
-
-              for (const key of Object.keys(normalizedMedia)) {
-                if (normalizedMedia[key as keyof typeof normalizedMedia]) {
-                  content = normalizedMedia[
-                    key as keyof typeof normalizedMedia
-                  ] as string;
-
-                  tagResults.push(
-                    generateTag(
-                      'meta',
-                      {
-                        property: `og:${type}:${key}`,
-                        content,
-                      },
-                      normalizedMedia.url as string,
-                    ),
-                  );
+            // Order matters here when adding multiple media tags @see https://ogp.me/#array
+            const normalizedMedia = media
+              ? {
+                  url: media?.url,
+                  secure_url: media?.url,
+                  type: inferMimeType(media.url),
+                  width: media?.width,
+                  height: media?.height,
+                  alt: media?.altText,
                 }
+              : {};
+
+            for (const key of Object.keys(normalizedMedia)) {
+              if (normalizedMedia[key as keyof typeof normalizedMedia]) {
+                content = normalizedMedia[
+                  key as keyof typeof normalizedMedia
+                ] as string;
+
+                tagResults.push(
+                  generateTag(
+                    'meta',
+                    {
+                      property: `og:${type}:${key}`,
+                      content,
+                    },
+                    normalizedMedia.url as string,
+                  ),
+                );
               }
             }
           }
-          break;
         }
-
-        case 'alternates': {
-          const alternates = ensureArray(value as unknown as Seo['alternates']);
-
-          for (const alternate of alternates) {
-            if (!alternate) {
-              continue;
-            }
-
-            const {language, url, default: defaultLang} = alternate;
-
-            const hrefLang = language
-              ? `${language}${defaultLang ? '-default' : ''}`
-              : undefined;
-
-            tagResults.push(
-              generateTag('link', {
-                rel: 'alternate',
-                hrefLang,
-                href: url,
-              }),
-            );
-          }
-
-          break;
-        }
-
-        case 'robots':
-          // Robots
-          const {
-            maxImagePreview,
-            maxSnippet,
-            maxVideoPreview,
-            noArchive,
-            noFollow,
-            noImageIndex,
-            noIndex,
-            noSnippet,
-            noTranslate,
-            unavailableAfter,
-          } = value as RobotsOptions;
-
-          const robotsParams = [
-            noArchive && 'noarchive',
-            noImageIndex && 'noimageindex',
-            noSnippet && 'nosnippet',
-            noTranslate && `notranslate`,
-            maxImagePreview && `max-image-preview:${maxImagePreview}`,
-            maxSnippet && `max-snippet:${maxSnippet}`,
-            maxVideoPreview && `max-video-preview:${maxVideoPreview}`,
-            unavailableAfter && `unavailable_after:${unavailableAfter}`,
-          ];
-
-          let robotsParam =
-            (noIndex ? 'noindex' : 'index') +
-            ',' +
-            (noFollow ? 'nofollow' : 'follow');
-
-          for (let param of robotsParams) {
-            if (param) {
-              robotsParam += `,${param}`;
-            }
-          }
-
-          tagResults.push(
-            generateTag('meta', {name: 'robots', content: robotsParam}),
-          );
-
-          break;
+        break;
       }
 
-      return tagResults;
-    });
+      case 'alternates': {
+        const alternates = ensureArray(seoInput.alternates);
 
-    const entries = tags.flat();
+        for (const alternate of alternates) {
+          if (!alternate) {
+            continue;
+          }
 
-    output.push(
-      // @ts-expect-error untyped
-      entries.filter((value) => !!value),
-    );
+          const {language, url, default: defaultLang} = alternate;
+
+          const hrefLang = language
+            ? `${language}${defaultLang ? '-default' : ''}`
+            : undefined;
+
+          tagResults.push(
+            generateTag('link', {
+              rel: 'alternate',
+              hrefLang,
+              href: url,
+            }),
+          );
+        }
+
+        break;
+      }
+
+      case 'robots': {
+        if (!seoInput.robots) {
+          break;
+        }
+
+        const {
+          maxImagePreview,
+          maxSnippet,
+          maxVideoPreview,
+          noArchive,
+          noFollow,
+          noImageIndex,
+          noIndex,
+          noSnippet,
+          noTranslate,
+          unavailableAfter,
+        } = seoInput.robots;
+
+        const robotsParams = [
+          noArchive && 'noarchive',
+          noImageIndex && 'noimageindex',
+          noSnippet && 'nosnippet',
+          noTranslate && `notranslate`,
+          maxImagePreview && `max-image-preview:${maxImagePreview}`,
+          maxSnippet && `max-snippet:${maxSnippet}`,
+          maxVideoPreview && `max-video-preview:${maxVideoPreview}`,
+          unavailableAfter && `unavailable_after:${unavailableAfter}`,
+        ];
+
+        let robotsParam =
+          (noIndex ? 'noindex' : 'index') +
+          ',' +
+          (noFollow ? 'nofollow' : 'follow');
+
+        for (let param of robotsParams) {
+          if (param) {
+            robotsParam += `,${param}`;
+          }
+        }
+
+        tagResults.push(
+          generateTag('meta', {name: 'robots', content: robotsParam}),
+        );
+
+        break;
+      }
+      case 'jsonLd': {
+        const content = seoInput.jsonLd;
+
+        if (typeof content !== 'object') {
+          break;
+        }
+
+        jsonLd = {...jsonLd, ...content};
+
+        break;
+      }
+    }
   }
 
   const additionalTags = [
@@ -564,7 +595,12 @@ export function generateSeoTags<
     }),
   ];
 
-  return [...output, ...additionalTags]
+  const finalJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+  };
+
+  return [...tagResults, ...additionalTags]
     .flat()
     .sort((a, b) => a.key.localeCompare(b.key))
     .concat(
@@ -682,11 +718,15 @@ function generateKey(tag: CustomHeadTagObject, group?: string) {
 function renderTitle<T extends CustomHeadTagObject['children']>(
   template?:
     | string
-    | ((title?: string) => string | undefined)
+    | ((title: string) => string | undefined)
     | undefined
     | null,
-  title?: T,
+  title?: T | null,
 ): string | undefined {
+  if (!title) {
+    return undefined;
+  }
+
   if (!template) {
     return title;
   }
@@ -798,18 +838,14 @@ function ensureArray<T>(value: T | T[]): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
-function validate(
-  schema: {validate: (data: unknown) => unknown},
-  data: unknown,
-) {
+function validate<T>(
+  schema: {validate: <T>(data: T) => NonNullable<T>},
+  data: T,
+): T {
   try {
-    return schema.validate(data);
+    return schema.validate<T>(data);
   } catch (error: unknown) {
-    const message = (error as Error).message;
-
-    // TODO: Discuss consistency of logging run time warnings/helpers
-    console.warn(message);
-
+    console.warn((error as Error).message);
     return data;
   }
 }
