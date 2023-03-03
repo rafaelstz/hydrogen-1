@@ -1,5 +1,17 @@
 # @shopify/cli-hydrogen
 
+## 4.0.9
+
+### Patch Changes
+
+- 1. Update Remix to 1.14.0 ([#599](https://github.com/Shopify/hydrogen/pull/599)) by [@blittle](https://github.com/blittle)
+
+  1. Add `Cache-Control` defaults to all the demo store routes
+
+- Display warning for deprecated flags. ([#609](https://github.com/Shopify/hydrogen/pull/609)) by [@cartogram](https://github.com/cartogram)
+
+- Fix `check routes` command to correctly check the standard route `/discount/<code>` instead of `/discounts/<code>`. ([#601](https://github.com/Shopify/hydrogen/pull/601)) by [@frandiox](https://github.com/frandiox)
+
 ## 4.0.8
 
 ### Patch Changes

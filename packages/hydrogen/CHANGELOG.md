@@ -1,5 +1,32 @@
 # @shopify/hydrogen
 
+## 2023.2.0
+
+### Minor Changes
+
+- Added `robots` option to SEO config that allows users granular control over the robots meta tag. This can be set on both a global and per-page basis using the handle.seo property. ([#572](https://github.com/Shopify/hydrogen/pull/572)) by [@cartogram](https://github.com/cartogram)
+
+  Example:
+
+  ```ts
+  export handle = {
+    seo: {
+      robots: {
+        noIndex: false,
+        noFollow: false,
+      }
+    }
+  }
+  ```
+
+### Patch Changes
+
+- Add new `loader` API for setting seo tags within route module ([#591](https://github.com/Shopify/hydrogen/pull/591)) by [@cartogram](https://github.com/cartogram)
+
+- 1. Update Remix to 1.14.0 ([#599](https://github.com/Shopify/hydrogen/pull/599)) by [@blittle](https://github.com/blittle)
+
+  1. Add `Cache-Control` defaults to all the demo store routes
+
 ## 2023.1.5
 
 ### Patch Changes
